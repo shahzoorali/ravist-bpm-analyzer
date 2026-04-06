@@ -18,20 +18,27 @@ app.use(express.json());
 /**
  * GET /api/bpm
  * Main endpoint — returns current BPM + track info.
- * Used by the radio player overlay.
  *
- * Response:
+ * The player should use this logic:
+ *   1. Poll every 10s
+ *   2. When isFinal=false  → show bpm (pass 1), style it as "pending"
+ *   3. When isFinal=true   → show bpm (final), full confidence styling
+ *
+ * Response shape:
  * {
- *   success: true,
- *   bpm: 128,             // rounded integer — use this for display
- *   bpmExact: 128.4,      // float with 1dp
- *   confidence: "high",   // high | medium | low
- *   artist: "Above & Beyond",
- *   track: "React [Extended Mix]",
- *   genre: "Electronic",
- *   analyzing: false,     // true while a fresh analysis is running
+ *   success:      true,
+ *   bpm:          124,         // best available right now — show this always
+ *   bpmExact:     124.1,       // float with 1dp
+ *   pass1Bpm:     124,         // pass 1 result (~38s), null until available
+ *   finalBpm:     124.1,       // final result (~68s), null until complete
+ *   isFinal:      true,        // false = still analysing, true = all passes done
+ *   confidence:   "high",      // high | medium | low | pending
+ *   artist:       "System F",
+ *   track:        "Out Of The Blue",
+ *   genre:        "Electronic",
+ *   analyzing:    false,
  *   lastAnalyzed: "2026-04-07T10:23:00.000Z",
- *   passes: [{ bpm, score }, ...]
+ *   passes:       [{ bpm, rawBpm, score }, ...]
  * }
  */
 app.get('/api/bpm', (req, res) => {
@@ -40,6 +47,11 @@ app.get('/api/bpm', (req, res) => {
     success:      true,
     bpm:          s.bpmRounded,
     bpmExact:     s.bpm,
+    pass1Bpm:     s.pass1Bpm    ? Math.round(s.pass1Bpm)    : null,
+    pass1BpmExact: s.pass1Bpm   ? s.pass1Bpm                : null,
+    finalBpm:     s.finalBpm    ? Math.round(s.finalBpm)    : null,
+    finalBpmExact: s.finalBpm   ? s.finalBpm                : null,
+    isFinal:      s.isFinal,
     confidence:   s.confidence,
     artist:       s.artist,
     track:        s.track,

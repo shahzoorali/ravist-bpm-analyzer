@@ -15,15 +15,18 @@ class Scheduler extends EventEmitter {
 
     // Current state — served by the API
     this.state = {
-      bpm:          null,
+      bpm:          null,   // current best BPM (pass 1 first, then final)
       bpmRounded:   null,
-      confidence:   null,   // 'high' | 'medium' | 'low'
+      pass1Bpm:     null,   // pass 1 result — available ~38s after track change
+      finalBpm:     null,   // final result — available ~68s after track change
+      isFinal:      false,  // false while only pass 1 is done, true once all passes complete
+      confidence:   null,   // 'high' | 'medium' | 'low' | 'pending'
       artist:       null,
       track:        null,
       genre:        null,
       lastAnalyzed: null,
       analyzing:    false,
-      passes:       [],     // raw pass results for transparency
+      passes:       [],
     };
 
     this._metaTimer     = null;
@@ -80,8 +83,11 @@ class Scheduler extends EventEmitter {
       return;
     }
 
-    this._busy          = true;
+    this._busy           = true;
     this.state.analyzing = true;
+    this.state.isFinal   = false;   // reset — new analysis in progress
+    this.state.pass1Bpm  = null;    // reset pass 1 result for new track
+    this.state.finalBpm  = null;    // reset final result for new track
     this.emit('analyzing');
 
     const passes = [];
@@ -97,7 +103,9 @@ class Scheduler extends EventEmitter {
         if (i === 1) {
           this.state.bpm          = result.bpm;
           this.state.bpmRounded   = Math.round(result.bpm);
-          this.state.confidence   = 'pending'; // signal more passes coming
+          this.state.pass1Bpm     = result.bpm;   // store permanently as pass1
+          this.state.isFinal      = false;
+          this.state.confidence   = 'pending';
           this.state.lastAnalyzed = new Date().toISOString();
           this.state.passes       = [{ bpm: result.bpm, rawBpm: result.rawBpm, score: result.score }];
           this.emit('bpm', this.state);
@@ -125,6 +133,8 @@ class Scheduler extends EventEmitter {
 
       this.state.bpm          = bpm;
       this.state.bpmRounded   = rounded;
+      this.state.finalBpm     = bpm;    // final answer — persists even after next analysis starts
+      this.state.isFinal      = true;
       this.state.confidence   = confidence;
       this.state.lastAnalyzed = new Date().toISOString();
       this.state.passes       = passes.map(p => ({ bpm: p.bpm, rawBpm: p.rawBpm, score: p.score }));
