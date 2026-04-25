@@ -3,6 +3,9 @@
 const { spawn }      = require('child_process');
 const MusicTempo     = require('music-tempo');
 const EventEmitter   = require('events');
+const { Essentia, EssentiaWASM } = require('essentia.js');
+
+const essentia = new Essentia(EssentiaWASM);
 
 const STREAM_URL       = 'https://stream.ravist.in/';
 const SAMPLE_RATE      = 44100;
@@ -99,7 +102,21 @@ class Analyzer extends EventEmitter {
           const rawBpm   = Math.round(mt.tempo * 10) / 10;
           const bpm      = normalizeBPM(rawBpm);
           const score    = mt.bestAgent ? Math.round(mt.bestAgent.score) : null;
-          resolve({ bpm, rawBpm, score, samples: floats.length });
+
+          // ── Key Analysis with Essentia ──
+          const vectorSignal = essentia.arrayToVector(floats);
+          const keyResult    = essentia.KeyExtractor(vectorSignal);
+          vectorSignal.delete(); // cleanup WASM memory
+
+          resolve({ 
+            bpm, 
+            rawBpm, 
+            score, 
+            samples: floats.length,
+            key: keyResult.key,
+            scale: keyResult.scale,
+            keyConfidence: Math.round(keyResult.strength * 100) / 100
+          });
         } catch (err) {
           reject(err);
         }

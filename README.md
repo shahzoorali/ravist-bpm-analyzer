@@ -1,7 +1,7 @@
 # Ravist Radio — BPM Service
 
-Real-time BPM detection for your live radio stream.
-Taps `stream.ravist.in`, analyses with `music-tempo` via ffmpeg PCM pipe, exposes a JSON API.
+Real-time BPM and Musical Key detection for your live radio stream.
+Taps `stream.ravist.in`, analyses with `music-tempo` and `essentia.js` via ffmpeg PCM pipe, exposes a JSON API.
 
 ---
 

@@ -24,6 +24,9 @@ class Scheduler extends EventEmitter {
       artist:       null,
       track:        null,
       genre:        null,
+      key:          null,
+      scale:        null,
+      keyConfidence: null,
       lastAnalyzed: null,
       analyzing:    false,
       passes:       [],
@@ -67,7 +70,7 @@ class Scheduler extends EventEmitter {
       this.state.genre  = genre;
 
       if (trackId !== this._currentTrack) {
-        console.log(`[Scheduler] Track changed → ${artist} - ${track}`);
+        console.log(`[Scheduler] Track changed → ${artist} - ${track} [Genre: ${genre || 'Unknown'}]`);
         this._currentTrack = trackId;
         // Slight delay so the new track's beat is established in the stream
         setTimeout(() => this._runAnalysis(), 8000);
@@ -106,8 +109,11 @@ class Scheduler extends EventEmitter {
           this.state.pass1Bpm     = result.bpm;   // store permanently as pass1
           this.state.isFinal      = false;
           this.state.confidence   = 'pending';
+          this.state.key          = result.key;
+          this.state.scale        = result.scale;
+          this.state.keyConfidence = result.keyConfidence;
           this.state.lastAnalyzed = new Date().toISOString();
-          this.state.passes       = [{ bpm: result.bpm, rawBpm: result.rawBpm, score: result.score }];
+          this.state.passes       = [{ bpm: result.bpm, rawBpm: result.rawBpm, score: result.score, key: result.key, scale: result.scale }];
           this.emit('bpm', this.state);
           console.log(`[Scheduler]   → Early emit: ${result.bpm} BPM (pending final)`);
         }
@@ -136,10 +142,13 @@ class Scheduler extends EventEmitter {
       this.state.finalBpm     = bpm;    // final answer — persists even after next analysis starts
       this.state.isFinal      = true;
       this.state.confidence   = confidence;
+      this.state.key          = best.key;
+      this.state.scale        = best.scale;
+      this.state.keyConfidence = best.keyConfidence;
       this.state.lastAnalyzed = new Date().toISOString();
-      this.state.passes       = passes.map(p => ({ bpm: p.bpm, rawBpm: p.rawBpm, score: p.score }));
+      this.state.passes       = passes.map(p => ({ bpm: p.bpm, rawBpm: p.rawBpm, score: p.score, key: p.key, scale: p.scale }));
 
-      console.log(`[Scheduler] ✓ Final BPM: ${bpm} (${confidence} confidence, winning score: ${best.score})`);
+      console.log(`[Scheduler] ✓ Final BPM: ${bpm} (${confidence} confidence, Key: ${this.state.key} ${this.state.scale}, Genre: ${this.state.genre})`);
       this.emit('bpm', this.state);
     } else {
       console.warn('[Scheduler] All passes failed.');
