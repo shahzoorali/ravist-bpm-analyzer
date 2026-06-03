@@ -78,7 +78,7 @@ app.get('/api/bpm/status', (req, res) => {
     healthy:    true,
     analyzing:  scheduler.state.analyzing,
     uptime:     Math.round(process.uptime()),
-    streamUrl:  'https://stream.ravist.in/',
+    streamUrl:  'https://rj.ravist.in/listen/ravist-autodj/radio.mp3',
     metaUrl:    'https://api.ravist.in/api/radio/metadata',
   });
 });

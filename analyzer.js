@@ -7,7 +7,7 @@ const { Essentia, EssentiaWASM } = require('essentia.js');
 
 const essentia = new Essentia(EssentiaWASM);
 
-const STREAM_URL       = 'https://stream.ravist.in/';
+const STREAM_URL       = 'https://rj.ravist.in/listen/ravist-autodj/radio.mp3';
 const SAMPLE_RATE      = 44100;
 const CAPTURE_SECS     = 30;
 const BYTES_PER_SAMPLE = 4; // f32le = 4 bytes
